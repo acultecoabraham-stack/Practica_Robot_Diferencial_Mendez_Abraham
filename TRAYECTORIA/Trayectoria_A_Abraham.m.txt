@@ -1,0 +1,165 @@
+clear all;
+clc;
+close all;
+
+% =========================================================
+% TRAYECTORIA LIBRE CON FORMA DE "A"
+% Basada en el boceto enviado
+% Tabla de diseño con tiempos:
+% 5, 8, 10, 15, 18, 20 y 25 s
+% =========================================================
+
+%% PARAMETROS
+ts = 25;                 % Tiempo total [s]
+ti = 0.01;               % Paso de integracion [s]
+t = 0:ti:ts;
+N = length(t);
+
+r = 0.03;                % Radio de ruedas [m]
+L = 0.18;                % Distancia entre ruedas [m]
+
+%% CONDICIONES INICIALES
+x = zeros(1,N);
+y = zeros(1,N);
+theta = zeros(1,N);
+
+x(1) = 0;
+y(1) = 0;
+theta(1) = 0;
+ch
+%% VECTORES PARA GUARDAR VELOCIDADES
+thetaDot_D = zeros(1,N);
+thetaDot_I = zeros(1,N);
+u = zeros(1,N);
+w = zeros(1,N);
+
+%% DISEÑO DE LA TRAYECTORIA
+% Intervalos:
+% 0-5   : giro para orientar la pierna izquierda
+% 5-8   : avance recto (pierna izquierda)
+% 8-10  : giro para orientar la pierna derecha
+% 10-15 : avance recto (pierna derecha)
+% 15-18 : retroceso parcial por la pierna derecha
+% 18-20 : giro para orientar el travesaño
+% 20-25 : avance recto del travesaño
+
+for k = 1:N-1
+
+    if t(k) < 5
+        % Intervalo 1
+        thetaDot_D(k) = 0.75;
+        thetaDot_I(k) = -0.75;
+
+    elseif t(k) < 8
+        % Intervalo 2
+        thetaDot_D(k) = 10;
+        thetaDot_I(k) = 10;
+
+    elseif t(k) < 10
+        % Intervalo 3
+        thetaDot_D(k) = -3.7;
+        thetaDot_I(k) = 3.7;
+
+    elseif t(k) < 15
+        % Intervalo 4
+        thetaDot_D(k) = 7;
+        thetaDot_I(k) = 7;
+
+    elseif t(k) < 18
+        % Intervalo 5
+        thetaDot_D(k) = -5;
+        thetaDot_I(k) = -5;
+
+    elseif t(k) < 20
+        % Intervalo 6
+        thetaDot_D(k) = -2.9;
+        thetaDot_I(k) = 2.9;
+
+    else
+        % Intervalo 7
+        thetaDot_D(k) = 7;
+        thetaDot_I(k) = 7;
+    end
+
+    % Cinematica directa
+    u(k) = (r/2)*(thetaDot_D(k) + thetaDot_I(k));
+    w(k) = (r/L)*(thetaDot_D(k) - thetaDot_I(k));
+
+    % Metodo de Euler
+    x(k+1) = x(k) + ti*u(k)*cos(theta(k));
+    y(k+1) = y(k) + ti*u(k)*sin(theta(k));
+    theta(k+1) = theta(k) + ti*w(k);
+
+    % Normalizar el angulo
+    theta(k+1) = atan2(sin(theta(k+1)), cos(theta(k+1)));
+end
+
+% Completar ultimo dato
+thetaDot_D(end) = thetaDot_D(end-1);
+thetaDot_I(end) = thetaDot_I(end-1);
+u(end) = u(end-1);
+w(end) = w(end-1);
+
+%% TABLA DE DISEÑO
+intervalo = (1:7)';
+tiempo_inicial = [0; 5; 8; 10; 15; 18; 20];
+tiempo_final   = [5; 8; 10; 15; 18; 20; 25];
+rueda_derecha  = [0.75; 10; -3.7; 7; -5; -2.9; 7];
+rueda_izquierda= [-0.75; 10; 3.7; 7; -5; 2.9; 7];
+
+movimiento = {
+    'Giro para orientar pierna izquierda';
+    'Trazo de la pierna izquierda';
+    'Giro para orientar pierna derecha';
+    'Trazo de la pierna derecha';
+    'Retroceso parcial para subir al travesaño';
+    'Giro para orientar el travesaño';
+    'Trazo del travesaño'
+};
+
+tabla_diseno = table(intervalo,tiempo_inicial,tiempo_final, ...
+    rueda_derecha,rueda_izquierda,movimiento);
+
+disp(' ');
+disp('TABLA DE DISEÑO DE LA TRAYECTORIA');
+disp(tabla_diseno);
+
+writetable(tabla_diseno,'tabla_diseno_trayectoria_A.csv');
+
+%% GRAFICA DE LA TRAYECTORIA
+figure(1);
+plot(x,y,'b','LineWidth',3); hold on;
+plot(x(1),y(1),'go','MarkerSize',10,'MarkerFaceColor','g');
+plot(x(end),y(end),'rs','MarkerSize',10,'MarkerFaceColor','r');
+grid on;
+axis equal;
+xlabel('Posicion X [m]');
+ylabel('Posicion Y [m]');
+title('Trayectoria libre con forma de A');
+legend('Trayectoria','Inicio','Final','Location','best');
+
+%% GRAFICA DE LAS VELOCIDADES
+figure(2);
+plot(t,thetaDot_D,'LineWidth',2); hold on;
+plot(t,thetaDot_I,'LineWidth',2);
+grid on;
+xlabel('Tiempo [s]');
+ylabel('Velocidad angular [rad/s]');
+title('Velocidades angulares de las ruedas');
+legend('Rueda derecha','Rueda izquierda','Location','best');
+
+%% ANIMACION SIMPLE
+figure(3);
+for k = 1:20:N
+    clf;
+    plot(x,y,'--','Color',[0.7 0.7 0.7],'LineWidth',1.5); hold on;
+    plot(x(1:k),y(1:k),'b','LineWidth',3);
+    plot(x(k),y(k),'ro','MarkerSize',8,'MarkerFaceColor','r');
+    quiver(x(k),y(k),0.2*cos(theta(k)),0.2*sin(theta(k)),0,'k','LineWidth',2);
+    grid on;
+    axis equal;
+    xlabel('Posicion X [m]');
+    ylabel('Posicion Y [m]');
+    title(sprintf('Animacion de la trayectoria en A  -  t = %.2f s',t(k)));
+    drawnow;
+end

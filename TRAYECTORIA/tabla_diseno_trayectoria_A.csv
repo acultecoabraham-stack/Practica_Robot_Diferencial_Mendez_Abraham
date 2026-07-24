@@ -1,0 +1,8 @@
+intervalo,tiempo_inicial,tiempo_final,rueda_derecha,rueda_izquierda,movimiento
+1,0,5,0.75,-0.75,Giro para orientar pierna izquierda
+2,5,8,10,10,Trazo de la pierna izquierda
+3,8,10,-3.7,3.7,Giro para orientar pierna derecha
+4,10,15,7,7,Trazo de la pierna derecha
+5,15,18,-5,-5,Retroceso parcial para subir al travesaño
+6,18,20,-2.9,2.9,Giro para orientar el travesaño
+7,20,25,7,7,Trazo del travesaño
